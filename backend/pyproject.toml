@@ -1,0 +1,39 @@
+[project]
+name = "melodystream-text-to-sql"
+version = "0.1.0"
+description = "Agentic natural-language-to-SQL BI system over the Chinook music database"
+requires-python = ">=3.10"
+dependencies = [
+    # Orchestration
+    "langgraph>=0.2.0",
+    "langchain-core>=0.3.0",
+    # Provider-agnostic model gateway
+    "litellm>=1.44.0",
+    # MCP client (execution agent talks to the read-only SQLite MCP server)
+    "mcp>=1.0.0",
+    "langchain-mcp-adapters>=0.1.0",
+    # SQL parsing / validation
+    "sqlglot>=25.0.0",
+    # API + serving
+    "fastapi>=0.115.0",
+    "uvicorn[standard]>=0.30.0",
+    "pydantic>=2.0.0",
+    "sse-starlette>=2.1.0",
+    # Eval + observability
+    "braintrust>=0.0.150",
+    "autoevals>=0.0.100",
+    # Data / plotting for the eval report
+    "pandas>=2.0.0",
+    "matplotlib>=3.8.0",
+    "python-dotenv>=1.0.0",
+]
+
+[project.optional-dependencies]
+dev = ["pytest>=8.0.0", "ruff>=0.6.0"]
+
+[tool.setuptools.packages.find]
+where = ["."]
+include = ["app*", "eval*"]
+
+[tool.ruff]
+line-length = 100
