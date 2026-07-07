@@ -1,0 +1,24 @@
+# Python
+__pycache__/
+*.py[cod]
+.venv/
+venv/
+*.egg-info/
+.pytest_cache/
+.ruff_cache/
+
+# Environment / secrets
+.env
+.env.*
+!.env.example
+
+# Data — the Chinook DB is downloaded via setup (see README), not committed
+data/*.db
+
+# Node / frontend
+node_modules/
+.next/
+dist/
+
+# OS / editor
+.DS_Store
