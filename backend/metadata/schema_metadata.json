@@ -1,0 +1,198 @@
+{
+  "database": {
+    "name": "Chinook",
+    "description": "The catalog and sales database of a digital music store (the MelodyStream BI scenario). It models a music catalog (artists, albums, tracks, genres, media types), people (customers and employees/support reps), sales (invoices and their line items), and curated playlists. It answers questions about what sells, who buys, which staff support which customers, and how the catalog is organized.",
+    "dialect": "sqlite"
+  },
+  "tables": {
+    "Artist": {
+      "description": "A recording artist or band. One row per artist.",
+      "grain": "one artist",
+      "synonyms": ["artist", "band", "performer", "musician"],
+      "primary_key": ["ArtistId"],
+      "columns": {
+        "ArtistId": {"type": "INTEGER", "description": "Surrogate primary key for the artist.", "synonyms": ["artist id"], "is_foreign_key": false, "references": null, "sample_values": [1, 2, 3]},
+        "Name": {"type": "NVARCHAR(120)", "description": "Artist or band name.", "synonyms": ["artist name", "band name"], "is_foreign_key": false, "references": null, "sample_values": ["AC/DC", "Accept", "Aerosmith"], "notes": "Nullable in schema but populated in practice."}
+      }
+    },
+    "Album": {
+      "description": "An album released by an artist. One row per album.",
+      "grain": "one album",
+      "synonyms": ["album", "record", "release"],
+      "primary_key": ["AlbumId"],
+      "columns": {
+        "AlbumId": {"type": "INTEGER", "description": "Surrogate primary key for the album.", "synonyms": ["album id"], "is_foreign_key": false, "references": null, "sample_values": [1, 2, 3]},
+        "Title": {"type": "NVARCHAR(160)", "description": "Album title.", "synonyms": ["album title", "album name"], "is_foreign_key": false, "references": null, "sample_values": ["For Those About To Rock We Salute You", "Let There Be Rock"]},
+        "ArtistId": {"type": "INTEGER", "description": "The artist who released this album.", "synonyms": ["artist"], "is_foreign_key": true, "references": "Artist.ArtistId", "sample_values": [1, 2]}
+      }
+    },
+    "Track": {
+      "description": "A single track/song in the catalog. Central table joining catalog (album/genre/media type) to sales (invoice lines) and playlists. One row per track.",
+      "grain": "one track",
+      "synonyms": ["track", "song", "recording"],
+      "primary_key": ["TrackId"],
+      "columns": {
+        "TrackId": {"type": "INTEGER", "description": "Surrogate primary key for the track.", "synonyms": ["track id", "song id"], "is_foreign_key": false, "references": null, "sample_values": [1, 2, 3]},
+        "Name": {"type": "NVARCHAR(200)", "description": "Track/song title.", "synonyms": ["track name", "song name", "song title"], "is_foreign_key": false, "references": null, "sample_values": ["For Those About To Rock (We Salute You)", "Balls to the Wall"]},
+        "AlbumId": {"type": "INTEGER", "description": "The album this track belongs to.", "synonyms": ["album"], "is_foreign_key": true, "references": "Album.AlbumId", "sample_values": [1, 2], "notes": "Nullable — some tracks have no album."},
+        "MediaTypeId": {"type": "INTEGER", "description": "The media/file type of this track.", "synonyms": ["media type", "format"], "is_foreign_key": true, "references": "MediaType.MediaTypeId", "sample_values": [1, 2]},
+        "GenreId": {"type": "INTEGER", "description": "The genre of this track.", "synonyms": ["genre"], "is_foreign_key": true, "references": "Genre.GenreId", "sample_values": [1, 2], "notes": "Nullable — some tracks have no genre."},
+        "Composer": {"type": "NVARCHAR(220)", "description": "Composer/writer credit for the track.", "synonyms": ["composer", "writer"], "is_foreign_key": false, "references": null, "sample_values": ["Angus Young, Malcolm Young, Brian Johnson"], "notes": "Often null."},
+        "Milliseconds": {"type": "INTEGER", "description": "Track duration in milliseconds.", "synonyms": ["duration", "length", "how long"], "is_foreign_key": false, "references": null, "sample_values": [343719, 342562], "notes": "Divide by 1000 for seconds, by 60000 for minutes."},
+        "Bytes": {"type": "INTEGER", "description": "File size of the track in bytes.", "synonyms": ["size", "file size"], "is_foreign_key": false, "references": null, "sample_values": [11170334], "notes": "Nullable."},
+        "UnitPrice": {"type": "NUMERIC(10,2)", "description": "Catalog list price of the track (per unit).", "synonyms": ["price", "list price"], "is_foreign_key": false, "references": null, "sample_values": [0.99, 1.99], "notes": "The sale price actually charged is on InvoiceLine.UnitPrice."}
+      }
+    },
+    "Genre": {
+      "description": "A music genre used to classify tracks. One row per genre.",
+      "grain": "one genre",
+      "synonyms": ["genre", "category", "style"],
+      "primary_key": ["GenreId"],
+      "columns": {
+        "GenreId": {"type": "INTEGER", "description": "Surrogate primary key for the genre.", "synonyms": ["genre id"], "is_foreign_key": false, "references": null, "sample_values": [1, 2, 3]},
+        "Name": {"type": "NVARCHAR(120)", "description": "Genre name.", "synonyms": ["genre name"], "is_foreign_key": false, "references": null, "sample_values": ["Rock", "Jazz", "Metal", "Alternative & Punk", "Blues"]}
+      }
+    },
+    "MediaType": {
+      "description": "The media/file format a track is stored in. One row per media type.",
+      "grain": "one media type",
+      "synonyms": ["media type", "format", "file type"],
+      "primary_key": ["MediaTypeId"],
+      "columns": {
+        "MediaTypeId": {"type": "INTEGER", "description": "Surrogate primary key for the media type.", "synonyms": ["media type id"], "is_foreign_key": false, "references": null, "sample_values": [1, 2]},
+        "Name": {"type": "NVARCHAR(120)", "description": "Media type name.", "synonyms": ["media type name", "format name"], "is_foreign_key": false, "references": null, "sample_values": ["MPEG audio file", "Protected AAC audio file", "AAC audio file"]}
+      }
+    },
+    "Playlist": {
+      "description": "A curated playlist. Tracks are attached via the PlaylistTrack junction table. One row per playlist. NOTE: several playlists share the same Name (e.g. two 'Music' playlists) — duplicate names are real and expected.",
+      "grain": "one playlist",
+      "synonyms": ["playlist", "curated list", "collection"],
+      "primary_key": ["PlaylistId"],
+      "columns": {
+        "PlaylistId": {"type": "INTEGER", "description": "Surrogate primary key for the playlist.", "synonyms": ["playlist id"], "is_foreign_key": false, "references": null, "sample_values": [1, 2]},
+        "Name": {"type": "NVARCHAR(120)", "description": "Playlist name; not unique.", "synonyms": ["playlist name"], "is_foreign_key": false, "references": null, "sample_values": ["Music", "Movies", "TV Shows", "90’s Music", "Classical"], "notes": "Duplicate names exist; group by PlaylistId (and Name) to keep them distinct."}
+      }
+    },
+    "PlaylistTrack": {
+      "description": "Junction table mapping playlists to tracks (many-to-many). One row per (playlist, track) membership.",
+      "grain": "one track's membership in one playlist",
+      "synonyms": ["playlist membership", "playlist tracks"],
+      "primary_key": ["PlaylistId", "TrackId"],
+      "columns": {
+        "PlaylistId": {"type": "INTEGER", "description": "The playlist.", "synonyms": ["playlist"], "is_foreign_key": true, "references": "Playlist.PlaylistId", "sample_values": [1, 3]},
+        "TrackId": {"type": "INTEGER", "description": "The track in the playlist.", "synonyms": ["track"], "is_foreign_key": true, "references": "Track.TrackId", "sample_values": [3402, 3389]}
+      }
+    },
+    "Customer": {
+      "description": "A customer of the store. Each customer is optionally assigned a support rep (an employee). One row per customer.",
+      "grain": "one customer",
+      "synonyms": ["customer", "client", "buyer", "account"],
+      "primary_key": ["CustomerId"],
+      "columns": {
+        "CustomerId": {"type": "INTEGER", "description": "Surrogate primary key for the customer.", "synonyms": ["customer id"], "is_foreign_key": false, "references": null, "sample_values": [1, 2]},
+        "FirstName": {"type": "NVARCHAR(40)", "description": "Customer first name.", "synonyms": ["first name"], "is_foreign_key": false, "references": null, "sample_values": ["Luís", "Leonie"]},
+        "LastName": {"type": "NVARCHAR(20)", "description": "Customer last name.", "synonyms": ["last name", "surname"], "is_foreign_key": false, "references": null, "sample_values": ["Gonçalves", "Köhler"]},
+        "Company": {"type": "NVARCHAR(80)", "description": "Customer's company, if any.", "synonyms": ["company", "organization"], "is_foreign_key": false, "references": null, "sample_values": ["Embraer - Empresa Brasileira de Aeronáutica S.A."], "notes": "Often null."},
+        "Address": {"type": "NVARCHAR(70)", "description": "Street address.", "synonyms": ["address"], "is_foreign_key": false, "references": null, "sample_values": ["Av. Brigadeiro Faria Lima, 2170"]},
+        "City": {"type": "NVARCHAR(40)", "description": "City.", "synonyms": ["city"], "is_foreign_key": false, "references": null, "sample_values": ["São José dos Campos", "Stuttgart"]},
+        "State": {"type": "NVARCHAR(40)", "description": "State/province.", "synonyms": ["state", "province"], "is_foreign_key": false, "references": null, "sample_values": ["SP"], "notes": "Often null."},
+        "Country": {"type": "NVARCHAR(40)", "description": "Country of the customer.", "synonyms": ["country", "nation"], "is_foreign_key": false, "references": null, "sample_values": ["Brazil", "Germany", "Canada", "USA", "France"]},
+        "PostalCode": {"type": "NVARCHAR(10)", "description": "Postal/ZIP code.", "synonyms": ["postal code", "zip"], "is_foreign_key": false, "references": null, "sample_values": ["12227-000"]},
+        "Phone": {"type": "NVARCHAR(24)", "description": "Phone number.", "synonyms": ["phone"], "is_foreign_key": false, "references": null, "sample_values": ["+55 (12) 3923-5555"]},
+        "Fax": {"type": "NVARCHAR(24)", "description": "Fax number.", "synonyms": ["fax"], "is_foreign_key": false, "references": null, "sample_values": [], "notes": "Usually null."},
+        "Email": {"type": "NVARCHAR(60)", "description": "Customer email address.", "synonyms": ["email", "email address"], "is_foreign_key": false, "references": null, "sample_values": ["luisg@embraer.com.br"]},
+        "SupportRepId": {"type": "INTEGER", "description": "The employee (support rep) assigned to this customer.", "synonyms": ["support rep", "sales rep", "assigned employee", "account manager"], "is_foreign_key": true, "references": "Employee.EmployeeId", "sample_values": [3, 4, 5], "notes": "Join to Employee via Employee.EmployeeId."}
+      }
+    },
+    "Employee": {
+      "description": "An employee of the store. Employees can be support reps for customers and report to other employees (self-referencing hierarchy via ReportsTo). One row per employee.",
+      "grain": "one employee",
+      "synonyms": ["employee", "staff", "support rep", "sales rep", "worker"],
+      "primary_key": ["EmployeeId"],
+      "columns": {
+        "EmployeeId": {"type": "INTEGER", "description": "Surrogate primary key for the employee.", "synonyms": ["employee id"], "is_foreign_key": false, "references": null, "sample_values": [1, 2]},
+        "LastName": {"type": "NVARCHAR(20)", "description": "Employee last name.", "synonyms": ["last name", "surname"], "is_foreign_key": false, "references": null, "sample_values": ["Adams", "Edwards", "Peacock"]},
+        "FirstName": {"type": "NVARCHAR(20)", "description": "Employee first name.", "synonyms": ["first name"], "is_foreign_key": false, "references": null, "sample_values": ["Andrew", "Nancy", "Jane"]},
+        "Title": {"type": "NVARCHAR(30)", "description": "Job title.", "synonyms": ["title", "role", "position"], "is_foreign_key": false, "references": null, "sample_values": ["General Manager", "Sales Manager", "Sales Support Agent", "IT Manager"]},
+        "ReportsTo": {"type": "INTEGER", "description": "The employee this person reports to (manager).", "synonyms": ["manager", "reports to", "supervisor"], "is_foreign_key": true, "references": "Employee.EmployeeId", "sample_values": [1, 2], "notes": "Self-referencing; null for the top manager."},
+        "BirthDate": {"type": "DATETIME", "description": "Employee date of birth.", "synonyms": ["birth date", "dob"], "is_foreign_key": false, "references": null, "sample_values": ["1962-02-18 00:00:00"]},
+        "HireDate": {"type": "DATETIME", "description": "Date the employee was hired.", "synonyms": ["hire date", "start date"], "is_foreign_key": false, "references": null, "sample_values": ["2002-08-14 00:00:00"], "notes": "Filter/group by year with strftime('%Y', HireDate)."},
+        "Address": {"type": "NVARCHAR(70)", "description": "Street address.", "synonyms": ["address"], "is_foreign_key": false, "references": null, "sample_values": ["11120 Jasper Ave NW"]},
+        "City": {"type": "NVARCHAR(40)", "description": "City.", "synonyms": ["city"], "is_foreign_key": false, "references": null, "sample_values": ["Edmonton", "Calgary"]},
+        "State": {"type": "NVARCHAR(40)", "description": "State/province.", "synonyms": ["state", "province"], "is_foreign_key": false, "references": null, "sample_values": ["AB"]},
+        "Country": {"type": "NVARCHAR(40)", "description": "Country.", "synonyms": ["country"], "is_foreign_key": false, "references": null, "sample_values": ["Canada"]},
+        "PostalCode": {"type": "NVARCHAR(10)", "description": "Postal code.", "synonyms": ["postal code", "zip"], "is_foreign_key": false, "references": null, "sample_values": ["T5K 2N1"]},
+        "Phone": {"type": "NVARCHAR(24)", "description": "Phone number.", "synonyms": ["phone"], "is_foreign_key": false, "references": null, "sample_values": ["+1 (780) 428-9482"]},
+        "Fax": {"type": "NVARCHAR(24)", "description": "Fax number.", "synonyms": ["fax"], "is_foreign_key": false, "references": null, "sample_values": ["+1 (780) 428-3457"]},
+        "Email": {"type": "NVARCHAR(60)", "description": "Employee email.", "synonyms": ["email"], "is_foreign_key": false, "references": null, "sample_values": ["andrew@chinookcorp.com"]}
+      }
+    },
+    "Invoice": {
+      "description": "A sales invoice issued to a customer on a date, with a billing address and a grand total. One row per invoice. Use Invoice.Total for whole-invoice / per-customer / per-country revenue; use InvoiceLine for per-track/genre/album revenue.",
+      "grain": "one invoice",
+      "synonyms": ["invoice", "order", "purchase", "sale", "transaction"],
+      "primary_key": ["InvoiceId"],
+      "columns": {
+        "InvoiceId": {"type": "INTEGER", "description": "Surrogate primary key for the invoice.", "synonyms": ["invoice id", "order id"], "is_foreign_key": false, "references": null, "sample_values": [1, 2]},
+        "CustomerId": {"type": "INTEGER", "description": "The customer billed on this invoice.", "synonyms": ["customer"], "is_foreign_key": true, "references": "Customer.CustomerId", "sample_values": [2, 4]},
+        "InvoiceDate": {"type": "DATETIME", "description": "Date the invoice was issued.", "synonyms": ["date", "invoice date", "order date", "purchase date"], "is_foreign_key": false, "references": null, "sample_values": ["2021-01-01 00:00:00"], "notes": "Filter/group by period with strftime, e.g. strftime('%Y', InvoiceDate) = '2021'. Data spans 2021-2025."},
+        "BillingAddress": {"type": "NVARCHAR(70)", "description": "Billing street address.", "synonyms": ["billing address"], "is_foreign_key": false, "references": null, "sample_values": ["Theodor-Heuss-Straße 34"]},
+        "BillingCity": {"type": "NVARCHAR(40)", "description": "Billing city.", "synonyms": ["billing city"], "is_foreign_key": false, "references": null, "sample_values": ["Stuttgart"]},
+        "BillingState": {"type": "NVARCHAR(40)", "description": "Billing state/province.", "synonyms": ["billing state"], "is_foreign_key": false, "references": null, "sample_values": ["CA"], "notes": "Often null."},
+        "BillingCountry": {"type": "NVARCHAR(40)", "description": "Billing country. Convenient for per-country revenue without joining Customer.", "synonyms": ["billing country", "country"], "is_foreign_key": false, "references": null, "sample_values": ["Germany", "Norway", "Brazil"]},
+        "BillingPostalCode": {"type": "NVARCHAR(10)", "description": "Billing postal code.", "synonyms": ["billing postal code"], "is_foreign_key": false, "references": null, "sample_values": ["70174"]},
+        "Total": {"type": "NUMERIC(10,2)", "description": "Grand total charged on the invoice (sum of its line items).", "synonyms": ["total", "invoice total", "amount", "revenue", "sales"], "is_foreign_key": false, "references": null, "sample_values": [1.98, 3.96], "notes": "Use for whole-invoice / per-customer / per-country revenue. For per-track/genre/album/media-type revenue, sum InvoiceLine.UnitPrice*Quantity instead."}
+      }
+    },
+    "InvoiceLine": {
+      "description": "A single line item on an invoice: which track was bought, at what unit price, and quantity. The grain for detailed sales analysis (revenue by track/genre/album/media type). One row per line item.",
+      "grain": "one line item on one invoice",
+      "synonyms": ["invoice line", "line item", "order line", "sale detail"],
+      "primary_key": ["InvoiceLineId"],
+      "columns": {
+        "InvoiceLineId": {"type": "INTEGER", "description": "Surrogate primary key for the line item.", "synonyms": ["invoice line id"], "is_foreign_key": false, "references": null, "sample_values": [1, 2]},
+        "InvoiceId": {"type": "INTEGER", "description": "The invoice this line belongs to.", "synonyms": ["invoice"], "is_foreign_key": true, "references": "Invoice.InvoiceId", "sample_values": [1, 1]},
+        "TrackId": {"type": "INTEGER", "description": "The track sold on this line.", "synonyms": ["track", "song"], "is_foreign_key": true, "references": "Track.TrackId", "sample_values": [2, 4]},
+        "UnitPrice": {"type": "NUMERIC(10,2)", "description": "Price charged per unit on this line.", "synonyms": ["price", "unit price"], "is_foreign_key": false, "references": null, "sample_values": [0.99, 1.99], "notes": "Revenue for a line = UnitPrice * Quantity."},
+        "Quantity": {"type": "INTEGER", "description": "Number of units sold on this line.", "synonyms": ["quantity", "qty", "units"], "is_foreign_key": false, "references": null, "sample_values": [1, 2]}
+      }
+    }
+  },
+  "relationships": [
+    {"from": "Album.ArtistId", "to": "Artist.ArtistId", "join": "Album.ArtistId = Artist.ArtistId", "description": "Each album belongs to one artist."},
+    {"from": "Track.AlbumId", "to": "Album.AlbumId", "join": "Track.AlbumId = Album.AlbumId", "description": "Each track belongs to at most one album."},
+    {"from": "Track.GenreId", "to": "Genre.GenreId", "join": "Track.GenreId = Genre.GenreId", "description": "Each track has at most one genre."},
+    {"from": "Track.MediaTypeId", "to": "MediaType.MediaTypeId", "join": "Track.MediaTypeId = MediaType.MediaTypeId", "description": "Each track has one media/file type."},
+    {"from": "PlaylistTrack.PlaylistId", "to": "Playlist.PlaylistId", "join": "PlaylistTrack.PlaylistId = Playlist.PlaylistId", "description": "Playlist membership side: playlist."},
+    {"from": "PlaylistTrack.TrackId", "to": "Track.TrackId", "join": "PlaylistTrack.TrackId = Track.TrackId", "description": "Playlist membership side: track."},
+    {"from": "InvoiceLine.TrackId", "to": "Track.TrackId", "join": "InvoiceLine.TrackId = Track.TrackId", "description": "Each sold line item references the track sold."},
+    {"from": "InvoiceLine.InvoiceId", "to": "Invoice.InvoiceId", "join": "InvoiceLine.InvoiceId = Invoice.InvoiceId", "description": "Each line item belongs to one invoice."},
+    {"from": "Invoice.CustomerId", "to": "Customer.CustomerId", "join": "Invoice.CustomerId = Customer.CustomerId", "description": "Each invoice belongs to one customer."},
+    {"from": "Customer.SupportRepId", "to": "Employee.EmployeeId", "join": "Customer.SupportRepId = Employee.EmployeeId", "description": "Each customer may be assigned a support-rep employee."},
+    {"from": "Employee.ReportsTo", "to": "Employee.EmployeeId", "join": "Employee.ReportsTo = Employee.EmployeeId", "description": "Self-referencing management hierarchy."}
+  ],
+  "common_metrics": [
+    {"name": "total sales / revenue (detailed)", "definition": "Revenue at the line-item grain, for breakdowns by track, genre, album, media type, or artist.", "sql_expression": "SUM(InvoiceLine.UnitPrice * InvoiceLine.Quantity)", "requires_tables": ["InvoiceLine"], "notes": "This is the correct revenue for per-track/genre/album/media-type/artist questions. Do NOT use Invoice.Total for these."},
+    {"name": "total revenue (whole invoice / customer / country)", "definition": "Revenue aggregated at the invoice level.", "sql_expression": "SUM(Invoice.Total)", "requires_tables": ["Invoice"], "notes": "Use for overall revenue, revenue per customer, or revenue per (billing) country/period."},
+    {"name": "average invoice total", "definition": "Mean invoice grand total.", "sql_expression": "AVG(Invoice.Total)", "requires_tables": ["Invoice"], "notes": "Group by BillingCountry for per-country averages."},
+    {"name": "number of customers", "definition": "Count of customers, optionally per country or per support rep.", "sql_expression": "COUNT(*) or COUNT(Customer.CustomerId)", "requires_tables": ["Customer"], "notes": "Per support rep: COUNT(Customer.CustomerId) grouped by Employee via Customer.SupportRepId."},
+    {"name": "tracks per group (count)", "definition": "Number of tracks per playlist / genre / media type / album.", "sql_expression": "COUNT(Track.TrackId)", "requires_tables": ["Track"], "notes": "For playlists use LEFT JOIN PlaylistTrack so empty playlists count 0; group by PlaylistId and Name."},
+    {"name": "revenue by time period", "definition": "Revenue grouped/filtered by year or month.", "sql_expression": "SUM(Invoice.Total) with strftime('%Y', InvoiceDate)", "requires_tables": ["Invoice"], "notes": "e.g. WHERE strftime('%Y', InvoiceDate) = '2021'."}
+  ],
+  "join_paths": [
+    {"goal": "genre -> sales", "path": "Genre.GenreId = Track.GenreId AND Track.TrackId = InvoiceLine.TrackId", "description": "Revenue or units sold by genre (best-selling genres)."},
+    {"goal": "media type -> tracks", "path": "MediaType.MediaTypeId = Track.MediaTypeId", "description": "Count tracks per media type (most popular format)."},
+    {"goal": "artist -> sales", "path": "Artist.ArtistId = Album.ArtistId AND Album.AlbumId = Track.AlbumId AND Track.TrackId = InvoiceLine.TrackId", "description": "Revenue or units sold by artist."},
+    {"goal": "support rep -> customers", "path": "Employee.EmployeeId = Customer.SupportRepId", "description": "Customers assigned to each support rep (employee with most customers)."},
+    {"goal": "customer -> sales", "path": "Customer.CustomerId = Invoice.CustomerId", "description": "Revenue or invoice counts per customer."},
+    {"goal": "playlist -> tracks", "path": "Playlist.PlaylistId = PlaylistTrack.PlaylistId AND PlaylistTrack.TrackId = Track.TrackId", "description": "Tracks in each playlist; use LEFT JOIN to include empty playlists."}
+  ],
+  "dialect_notes": [
+    "SQLite dialect. Date filtering/grouping uses strftime, e.g. strftime('%Y', InvoiceDate) = '2021' or strftime('%Y-%m', InvoiceDate).",
+    "String concatenation uses || , e.g. FirstName || ' ' || LastName AS Name.",
+    "Identifiers are case-sensitive as written (Genre, InvoiceLine, SupportRepId).",
+    "Several playlists share the same Name; group by PlaylistId (and Name) and expect duplicate-named rows — this is correct, do not add DISTINCT to hide it.",
+    "Monetary columns (UnitPrice, Total) are NUMERIC(10,2); round to 2 decimals when presenting.",
+    "Only read-only SELECT/CTE queries are permitted; no writes, DDL, PRAGMA, or multiple statements."
+  ]
+}

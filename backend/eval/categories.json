@@ -1,0 +1,12 @@
+{
+  "What are the top 5 best-selling genres by total sales?": "aggregation_with_joins",
+  "How many customers does each country have?": "simple_aggregation",
+  "Which employee has the most customers assigned to them?": "aggregation_with_joins",
+  "What is the average invoice total for each country?": "simple_aggregation",
+  "List all albums by the artist 'AC/DC'": "filtering_with_join",
+  "What are the names and email addresses of customers from Brazil?": "simple_filtering",
+  "How many tracks are there in each playlist?": "aggregation_with_joins",
+  "What is the total revenue generated in the year 2021?": "date_filtering",
+  "Which 5 tracks have the longest duration?": "simple_sorting",
+  "What is the most popular media type based on number of tracks?": "aggregation_with_joins"
+}

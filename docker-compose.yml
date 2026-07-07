@@ -1,0 +1,30 @@
+services:
+  backend:
+    build:
+      context: .
+      dockerfile: Dockerfile.backend
+    ports:
+      - "8000:8000"
+    environment:
+      # Provide at least one provider key (or set LLM_BACKEND=stub for an offline demo).
+      - LLM_BACKEND=${LLM_BACKEND:-litellm}
+      - DEFAULT_MODEL=${DEFAULT_MODEL:-anthropic/claude-sonnet-5}
+      - EXEC_BACKEND=${EXEC_BACKEND:-direct}
+      - ANTHROPIC_API_KEY=${ANTHROPIC_API_KEY:-}
+      - FIREWORKS_API_KEY=${FIREWORKS_API_KEY:-}
+      - OPENAI_API_KEY=${OPENAI_API_KEY:-}
+      - CORS_ORIGINS=http://localhost:3000
+    volumes:
+      # Chinook DB mounted read-only (download via ./setup.sh first)
+      - ./data:/data:ro
+
+  frontend:
+    build:
+      context: .
+      dockerfile: Dockerfile.frontend
+    ports:
+      - "3000:3000"
+    environment:
+      - NEXT_PUBLIC_API_URL=http://localhost:8000
+    depends_on:
+      - backend
