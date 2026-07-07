@@ -14,8 +14,20 @@ def router_node(state: AgentState) -> dict[str, Any]:
     user = state["question"]
     res, acct = run_llm_step("router", system, user, state["model"], max_tokens=800)
 
+    # Surface a provider/model failure (auth, quota/billing, timeout, bad JSON) as a clear
+    # error rather than a misleading "clarification needed" — routes straight to aggregate.
+    if res.error:
+        return {
+            "router": {"error": res.error},
+            "intent": "unsupported",
+            "clarification": None,
+            "status": "error",
+            "error": f"model error: {res.error}",
+            **acct,
+        }
+
     data = res.data or {}
-    intent = data.get("intent", "analytical_sql" if not res.error else "clarification_needed")
+    intent = data.get("intent", "analytical_sql")
     clarification = data.get("clarification")
 
     update: dict[str, Any] = {

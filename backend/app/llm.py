@@ -21,14 +21,16 @@ import time
 from dataclasses import dataclass, field
 from typing import Any
 
-DEFAULT_MODEL = os.environ.get("DEFAULT_MODEL", "anthropic/claude-sonnet-5")
+DEFAULT_MODEL = os.environ.get("DEFAULT_MODEL", "openai/gpt-4o-mini")
 
 # The models the eval benchmarks. `key` is a short label used in reports/UI; `model` is the
-# LiteLLM model id. Adjust ids to match your provider accounts.
+# LiteLLM model id. Provider-agnostic — mix providers freely by editing this map + your keys.
 MODEL_REGISTRY: dict[str, str] = {
-    "fireworks-llama-70b": "fireworks_ai/accounts/fireworks/models/llama-v3p1-70b-instruct",
-    "claude-haiku-4-5": "anthropic/claude-haiku-4-5",
-    "claude-sonnet-5": "anthropic/claude-sonnet-5",
+    "gpt-4o-mini": "openai/gpt-4o-mini",   # cheap / fast tier
+    "gpt-4o": "openai/gpt-4o",             # higher-accuracy tier
+    # Add other providers here if you have keys, e.g.:
+    #   "claude-sonnet-5": "anthropic/claude-sonnet-5",
+    #   "llama-70b": "fireworks_ai/accounts/fireworks/models/llama-v3p1-70b-instruct",
 }
 
 

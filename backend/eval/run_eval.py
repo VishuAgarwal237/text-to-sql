@@ -29,7 +29,7 @@ from eval import scorers  # noqa: E402
 
 HERE = Path(__file__).resolve().parent
 RESULTS_DIR = HERE / "results"
-DEFAULT_MODELS = ["fireworks-llama-70b", "claude-haiku-4-5", "claude-sonnet-5"]
+DEFAULT_MODELS = ["gpt-4o-mini", "gpt-4o"]
 
 
 def _models() -> list[str]:

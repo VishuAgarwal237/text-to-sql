@@ -8,11 +8,11 @@ services:
     environment:
       # Provide at least one provider key (or set LLM_BACKEND=stub for an offline demo).
       - LLM_BACKEND=${LLM_BACKEND:-litellm}
-      - DEFAULT_MODEL=${DEFAULT_MODEL:-anthropic/claude-sonnet-5}
+      - DEFAULT_MODEL=${DEFAULT_MODEL:-openai/gpt-4o-mini}
       - EXEC_BACKEND=${EXEC_BACKEND:-direct}
+      - OPENAI_API_KEY=${OPENAI_API_KEY:-}
       - ANTHROPIC_API_KEY=${ANTHROPIC_API_KEY:-}
       - FIREWORKS_API_KEY=${FIREWORKS_API_KEY:-}
-      - OPENAI_API_KEY=${OPENAI_API_KEY:-}
       - CORS_ORIGINS=http://localhost:3000
     volumes:
       # Chinook DB mounted read-only (download via ./setup.sh first)

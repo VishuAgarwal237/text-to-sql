@@ -33,7 +33,7 @@ from app import db  # noqa: E402
 HERE = Path(__file__).resolve().parent
 PROMPT_FILE = HERE / "metadata_prompt.md"
 OUTPUT_FILE = HERE / "schema_metadata.json"
-DEFAULT_MODEL = os.environ.get("METADATA_MODEL", "anthropic/claude-sonnet-5")
+DEFAULT_MODEL = os.environ.get("METADATA_MODEL", "openai/gpt-4o")
 SAMPLES_PER_COLUMN = 5
 
 

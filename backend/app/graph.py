@@ -36,7 +36,9 @@ def aggregate_node(state: AgentState) -> dict[str, Any]:
     """Assemble the final response payload from whatever the pipeline produced."""
     intent = state.get("intent", "analytical_sql")
 
-    if intent == "clarification_needed":
+    if state.get("error"):
+        status, error = "error", state["error"]
+    elif intent == "clarification_needed":
         status, error = "pending_user_input", None
     elif intent in {"meta", "unsupported"}:
         status, error = "success", None
