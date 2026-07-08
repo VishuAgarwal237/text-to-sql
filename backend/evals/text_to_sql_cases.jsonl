@@ -1,0 +1,5 @@
+{"input":"What are the top 5 genres by revenue?","expected":{"must_use_tables":["Genre","Track","InvoiceLine"],"chart_type":"bar"}}
+{"input":"List customers in Germany.","expected":{"must_use_tables":["Customer"],"filters":{"Country":"Germany"}}}
+{"input":"Which countries have the most customers?","expected":{"must_use_tables":["Customer"],"chart_type":"bar"}}
+{"input":"Show monthly sales revenue.","expected":{"must_use_tables":["Invoice"],"chart_type":"line"}}
+{"input":"What are the highest revenue invoices?","expected":{"must_use_tables":["Invoice"],"chart_type":"table"}}
