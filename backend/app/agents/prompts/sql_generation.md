@@ -63,8 +63,6 @@ Reply using the exact JSON format below and nothing else:
   "status": "success | error",
   "thought_process": "Your step-by-step reasoning",
   "sql": "SELECT g.Name, SUM(il.UnitPrice * il.Quantity) AS TotalSales FROM Genre g JOIN Track t ON g.GenreId = t.GenreId JOIN InvoiceLine il ON t.TrackId = il.TrackId GROUP BY g.Name ORDER BY TotalSales DESC LIMIT 5",
-  "assumptions": ["Any interpretation choices, e.g. 'best-selling ranked by total revenue'"],
-  "result": "A one-line plain-English description of what the query returns.",
-  "suggested_next_steps": ["e.g. 'validate and execute the query'"]
+  "assumptions": ["Any interpretation choices, e.g. 'best-selling ranked by total revenue'"]
 }
 ```

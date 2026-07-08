@@ -161,6 +161,48 @@ def get_schema() -> dict[str, Any]:
         conn.close()
 
 
+def connect_ro() -> sqlite3.Connection:
+    """Public read-only connection factory. Exposed for the execution guard, which needs the
+    live connection to install a timeout watchdog and read EXPLAIN QUERY PLAN. Callers are
+    responsible for closing it and MUST only run SQL that passed `assert_read_only`."""
+    return _connect()
+
+
+# Sampling is capped by scanning only the first `scan_limit` rows rather than the whole table,
+# so it stays cheap on large tables (approximate, not exact — sufficient for the value index).
+def sample_column_values(
+    table: str, column: str, limit: int = 20, scan_limit: int = 10000
+) -> list[tuple[Any, int]]:
+    """Return up to `limit` most-frequent non-null values of a column as (value, count),
+    scanning at most `scan_limit` rows. Used by the value/entity index and metadata generator."""
+    conn = _connect()
+    try:
+        cur = conn.execute(
+            f'SELECT v, COUNT(*) AS c FROM '
+            f'(SELECT "{column}" AS v FROM "{table}" WHERE "{column}" IS NOT NULL LIMIT ?) '
+            f'GROUP BY v ORDER BY c DESC LIMIT ?',
+            (scan_limit, limit),
+        )
+        return [(r["v"], r["c"]) for r in cur]
+    finally:
+        conn.close()
+
+
+def approx_distinct_count(table: str, column: str, scan_limit: int = 10000) -> int:
+    """Approximate distinct-value count of a column over the first `scan_limit` rows.
+    Lets the value index skip high-cardinality columns (ids, free text) it shouldn't index."""
+    conn = _connect()
+    try:
+        row = conn.execute(
+            f'SELECT COUNT(DISTINCT v) AS n FROM '
+            f'(SELECT "{column}" AS v FROM "{table}" WHERE "{column}" IS NOT NULL LIMIT ?)',
+            (scan_limit,),
+        ).fetchone()
+        return int(row["n"]) if row else 0
+    finally:
+        conn.close()
+
+
 if __name__ == "__main__":
     # Smoke test: print table names and prove the read-only guard blocks a write.
     print("Tables:", list(get_schema().keys()))

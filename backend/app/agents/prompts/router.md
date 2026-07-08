@@ -71,7 +71,6 @@ Reply using the exact JSON format below and nothing else:
   },
   "clarification": "One clarifying question if intent is clarification_needed, else null",
   "assumptions": ["Any default interpretations you made, e.g. 'best-selling = by total revenue'"],
-  "result": "For meta/unsupported: a short user-facing message. For analytical_sql: a one-line restatement of the question.",
-  "suggested_next_steps": ["1-2 next actions, e.g. 'generate SQL', 'ask user to specify a country'"]
+  "result": "For meta/unsupported: a short user-facing message. For analytical_sql: a one-line restatement of the question."
 }
 ```

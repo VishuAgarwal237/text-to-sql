@@ -58,8 +58,6 @@ Reply using the exact JSON format below and nothing else:
   "status": "success | error",
   "thought_process": "Your step-by-step diagnosis and fix",
   "sql": "The corrected SQLite SELECT query",
-  "fix_explanation": "One line naming the error and what you changed to fix it",
-  "result": "A one-line plain-English description of what the corrected query returns.",
-  "suggested_next_steps": ["e.g. 're-validate and execute'"]
+  "fix_explanation": "One line naming the error and what you changed to fix it"
 }
 ```

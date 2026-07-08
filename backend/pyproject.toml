@@ -14,6 +14,8 @@ dependencies = [
     "langchain-mcp-adapters>=0.1.0",
     # SQL parsing / validation
     "sqlglot>=25.0.0",
+    # Retrieval index math (table embedding index)
+    "numpy>=1.26.0",
     # API + serving
     "fastapi>=0.115.0",
     "uvicorn[standard]>=0.30.0",
@@ -34,6 +36,10 @@ dev = ["pytest>=8.0.0", "ruff>=0.6.0"]
 [tool.setuptools.packages.find]
 where = ["."]
 include = ["app*", "eval*"]
+
+[tool.pytest.ini_options]
+pythonpath = ["."]
+testpaths = ["tests"]
 
 [tool.ruff]
 line-length = 100
