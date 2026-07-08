@@ -2,7 +2,77 @@
 @tailwind components;
 @tailwind utilities;
 
-body {
-  background: #f7f8fa;
-  color: #1f2937;
+@layer base {
+  :root {
+    color-scheme: dark;
+  }
+
+  body {
+    background-color: #16141b;
+    /* warm console ambience: a low amber glow from the top, a cool signal glow bottom-left */
+    background-image:
+      radial-gradient(120% 80% at 78% -10%, rgba(246, 169, 59, 0.10), transparent 60%),
+      radial-gradient(90% 70% at -10% 110%, rgba(91, 209, 230, 0.07), transparent 55%);
+    background-attachment: fixed;
+    color: #f4efe6;
+    font-family: var(--font-sans), system-ui, sans-serif;
+    -webkit-font-smoothing: antialiased;
+  }
+
+  ::selection {
+    background: rgba(246, 169, 59, 0.28);
+    color: #fff;
+  }
+
+  /* Quiet, on-brand scrollbars for the data panels */
+  * {
+    scrollbar-width: thin;
+    scrollbar-color: #332e3d transparent;
+  }
+  *::-webkit-scrollbar {
+    height: 8px;
+    width: 8px;
+  }
+  *::-webkit-scrollbar-thumb {
+    background: #332e3d;
+    border-radius: 999px;
+  }
+}
+
+@layer components {
+  /* Eyebrow label — mono, tracked, uppercase. Structure as information. */
+  .eyebrow {
+    @apply font-mono text-[10.5px] uppercase tracking-[0.22em] text-fog;
+  }
+
+  /* The signature: an equalizer. Five bars that pulse while the agents work. */
+  .eq {
+    display: inline-flex;
+    align-items: flex-end;
+    gap: 2.5px;
+    height: 1em;
+  }
+  .eq > i {
+    width: 2.5px;
+    height: 100%;
+    background: currentColor;
+    border-radius: 2px;
+    transform-origin: bottom;
+    animation: eq 1.05s ease-in-out infinite;
+  }
+  .eq > i:nth-child(1) { animation-delay: -0.9s; }
+  .eq > i:nth-child(2) { animation-delay: -0.5s; }
+  .eq > i:nth-child(3) { animation-delay: -0.7s; }
+  .eq > i:nth-child(4) { animation-delay: -0.2s; }
+  .eq > i:nth-child(5) { animation-delay: -0.6s; }
+
+  @keyframes eq {
+    0%, 100% { transform: scaleY(0.3); }
+    50% { transform: scaleY(1); }
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .eq > i { animation: none; transform: scaleY(0.7); }
+  .animate-fade-up { animation: none !important; }
 }

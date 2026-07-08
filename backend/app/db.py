@@ -18,9 +18,18 @@ import sqlite3
 from pathlib import Path
 from typing import Any
 
-# Resolve the DB path from env, defaulting to the repo's data/ copy. In Docker this is
-# a read-only bind mount; locally it points at data/Chinook.db.
-DEFAULT_DB_PATH = Path(__file__).resolve().parents[2] / "data" / "Chinook.db"
+# Resolve the DB path from env, defaulting to the first `data/Chinook.db` that exists across
+# the layouts we run in: the repo root (local dev / Docker bind mount, `backend/`'s parent),
+# a self-contained `backend/` root (Vercel serverless, where `backend/data/` is bundled), and
+# the process CWD. This keeps a single code path working whether the app is served via the
+# repo-root wrapper or Vercel's FastAPI preset (which imports `app.main` directly).
+_HERE = Path(__file__).resolve()
+_DB_CANDIDATES = [
+    _HERE.parents[2] / "data" / "Chinook.db",   # repo-root layout: <repo>/data/Chinook.db
+    _HERE.parents[1] / "data" / "Chinook.db",   # backend-root layout: backend/data/Chinook.db
+    Path.cwd() / "data" / "Chinook.db",         # relative to the process working directory
+]
+DEFAULT_DB_PATH = next((p for p in _DB_CANDIDATES if p.exists()), _DB_CANDIDATES[0])
 DB_PATH = Path(os.environ.get("CHINOOK_DB_PATH", str(DEFAULT_DB_PATH)))
 
 # Statement keywords that mutate data or schema, or otherwise escape the read-only intent.

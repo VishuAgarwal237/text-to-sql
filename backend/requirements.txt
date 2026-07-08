@@ -1,0 +1,11 @@
+# Slim requirements for the Vercel serverless backend (API request path only).
+# Excludes eval-only deps (matplotlib/pandas/braintrust/autoevals) and mcp — the API uses the
+# direct read-only execution backend, so the MCP server isn't imported here.
+fastapi>=0.115.0
+langgraph>=0.2.0
+langchain-core>=0.3.0
+litellm>=1.44.0
+sqlglot>=25.0.0
+pydantic>=2.0.0
+sse-starlette>=2.1.0
+python-dotenv>=1.0.0

@@ -15,7 +15,19 @@ import {
 } from "recharts";
 import type { ChartSpec } from "@/lib/api";
 
-const COLORS = ["#4FA9E8", "#F26722", "#34C759", "#AF52DE", "#FF9500"];
+// Analog-console series palette: amber, signal-cyan, magenta, lime, violet.
+const COLORS = ["#F6A93B", "#5BD1E6", "#D774A8", "#A8D65C", "#8B7FD6"];
+const AXIS = "#A79FB2";
+const GRID = "#332E3D";
+
+const tooltipStyle = {
+  background: "#1E1B25",
+  border: "1px solid #332E3D",
+  borderRadius: 10,
+  color: "#F4EFE6",
+  fontSize: 12,
+  fontFamily: "var(--font-mono), monospace",
+} as const;
 
 export default function ResultChart({
   spec,
@@ -26,7 +38,7 @@ export default function ResultChart({
   rows: Record<string, unknown>[];
   columns: string[];
 }) {
-  if (!rows.length) return <p className="text-gray-500">No results to display.</p>;
+  if (!rows.length) return <p className="text-sm text-fog">No results to display.</p>;
 
   // KPI card — single scalar
   if (spec.type === "kpi") {
@@ -34,8 +46,8 @@ export default function ResultChart({
     const value = rows[0]?.[key];
     return (
       <div className="flex flex-col items-center justify-center py-10">
-        <div className="text-5xl font-bold text-brand">{String(value)}</div>
-        <div className="mt-2 text-gray-500">{key}</div>
+        <div className="font-display text-6xl font-semibold text-amber">{String(value)}</div>
+        <div className="mt-2 font-mono text-[11px] uppercase tracking-[0.18em] text-fog">{key}</div>
       </div>
     );
   }
@@ -52,28 +64,28 @@ export default function ResultChart({
     <ResponsiveContainer width="100%" height={380}>
       {spec.type === "line" ? (
         <LineChart data={rows} margin={{ top: 10, right: 20, bottom: 60, left: 0 }}>
-          <CartesianGrid strokeDasharray="3 3" stroke="#eee" />
-          <XAxis dataKey={x} angle={-35} textAnchor="end" height={70} tick={{ fontSize: 12 }} />
-          <YAxis tick={{ fontSize: 12 }} />
-          <Tooltip />
+          <CartesianGrid strokeDasharray="3 3" stroke={GRID} />
+          <XAxis dataKey={x} angle={-35} textAnchor="end" height={70} tick={{ fontSize: 12, fill: AXIS }} stroke={GRID} />
+          <YAxis tick={{ fontSize: 12, fill: AXIS }} stroke={GRID} />
+          <Tooltip contentStyle={tooltipStyle} cursor={{ stroke: GRID }} />
           {ys.map((y, i) => (
-            <Line key={y} type="monotone" dataKey={y} stroke={COLORS[i % COLORS.length]} dot={false} />
+            <Line key={y} type="monotone" dataKey={y} stroke={COLORS[i % COLORS.length]} strokeWidth={2} dot={false} />
           ))}
         </LineChart>
       ) : spec.type === "scatter" ? (
         <ScatterChart margin={{ top: 10, right: 20, bottom: 60, left: 0 }}>
-          <CartesianGrid stroke="#eee" />
-          <XAxis dataKey={x} name={x} tick={{ fontSize: 12 }} />
-          <YAxis dataKey={ys[0]} name={ys[0]} tick={{ fontSize: 12 }} />
-          <Tooltip cursor={{ strokeDasharray: "3 3" }} />
+          <CartesianGrid stroke={GRID} />
+          <XAxis dataKey={x} name={x} tick={{ fontSize: 12, fill: AXIS }} stroke={GRID} />
+          <YAxis dataKey={ys[0]} name={ys[0]} tick={{ fontSize: 12, fill: AXIS }} stroke={GRID} />
+          <Tooltip contentStyle={tooltipStyle} cursor={{ strokeDasharray: "3 3", stroke: GRID }} />
           <Scatter data={rows} fill={COLORS[0]} />
         </ScatterChart>
       ) : (
         <BarChart data={rows} margin={{ top: 10, right: 20, bottom: 70, left: 0 }}>
-          <CartesianGrid strokeDasharray="3 3" stroke="#eee" />
-          <XAxis dataKey={x} angle={-35} textAnchor="end" height={80} interval={0} tick={{ fontSize: 11 }} />
-          <YAxis tick={{ fontSize: 12 }} />
-          <Tooltip />
+          <CartesianGrid strokeDasharray="3 3" stroke={GRID} vertical={false} />
+          <XAxis dataKey={x} angle={-35} textAnchor="end" height={80} interval={0} tick={{ fontSize: 11, fill: AXIS }} stroke={GRID} />
+          <YAxis tick={{ fontSize: 12, fill: AXIS }} stroke={GRID} />
+          <Tooltip contentStyle={tooltipStyle} cursor={{ fill: "rgba(246,169,59,0.08)" }} />
           {ys.map((y, i) => (
             <Bar key={y} dataKey={y} fill={COLORS[i % COLORS.length]} radius={[3, 3, 0, 0]} />
           ))}
@@ -92,12 +104,15 @@ export function ResultTable({
 }) {
   const cols = columns.length ? columns : Object.keys(rows[0] || {});
   return (
-    <div className="max-h-96 overflow-auto rounded border border-gray-200">
-      <table className="w-full text-sm">
-        <thead className="sticky top-0 bg-gray-50">
+    <div className="max-h-96 overflow-auto rounded-lg border border-line">
+      <table className="w-full border-collapse text-sm">
+        <thead className="sticky top-0 bg-raise">
           <tr>
             {cols.map((c) => (
-              <th key={c} className="px-3 py-2 text-left font-semibold text-gray-700">
+              <th
+                key={c}
+                className="border-b border-line px-3 py-2.5 text-left font-mono text-[11px] uppercase tracking-[0.12em] text-fog"
+              >
                 {c}
               </th>
             ))}
@@ -105,9 +120,9 @@ export function ResultTable({
         </thead>
         <tbody>
           {rows.map((r, i) => (
-            <tr key={i} className="border-t border-gray-100">
+            <tr key={i} className="odd:bg-panel/40 hover:bg-raise/60">
               {cols.map((c) => (
-                <td key={c} className="px-3 py-1.5 text-gray-800">
+                <td key={c} className="border-b border-line/60 px-3 py-2 text-cream">
                   {String(r[c] ?? "")}
                 </td>
               ))}
