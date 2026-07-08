@@ -51,12 +51,13 @@ def hydrate(
     fk_graph: FKGraph,
     *,
     complete_fn: Callable[[str, str], str] = llm.complete,
+    embed_fn: Callable = llm.embed,
     candidate_k: int = 30,
     budget_tokens: int = 6000,
 ) -> dict[str, Any]:
     """Produce the hydrated schema context for the SQL-generation agent."""
     # 1 + 2 — recall-oriented candidate generation. Widen, don't decide.
-    ranked = [t for t, _ in embed_index.query(question, k=candidate_k)]
+    ranked = [t for t, _ in embed_index.query(question, k=candidate_k, embed_fn=embed_fn)]
     value_hints = value_index.query(question)
     forced = value_index.candidate_tables(question)  # literal matches must not be budgeted out
     for t in forced:

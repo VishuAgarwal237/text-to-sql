@@ -14,6 +14,7 @@ venv/
 
 # Data — the Chinook DB is downloaded via setup (see README), not committed
 data/*.db
+backend/data/
 
 # Node / frontend
 node_modules/

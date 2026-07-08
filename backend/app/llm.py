@@ -37,11 +37,23 @@ def complete(system: str, user: str, model: str | None = None, temperature: floa
 
 def embed(texts: Sequence[str], model: str | None = None) -> list[list[float]]:
     """Embed a batch of texts. Batches are the caller's responsibility to size."""
+    model = model or EMBED_MODEL
     import litellm
 
-    resp = litellm.embedding(model=model or EMBED_MODEL, input=list(texts))
-    # LiteLLM normalises to {"data": [{"embedding": [...]}, ...]}.
-    return [row["embedding"] for row in resp["data"]]
+    try:
+        resp = litellm.embedding(model=model, input=list(texts))
+        # LiteLLM normalises to {"data": [{"embedding": [...]}, ...]}.
+        return [row["embedding"] for row in resp["data"]]
+    except Exception:
+        if not model.startswith("text-embedding"):
+            raise
+
+    # Fallback for OpenAI embedding models. Some LiteLLM/OpenAI SDK combinations can fail while
+    # trying to read raw response headers; the direct SDK path keeps eval/runtime retrieval usable.
+    from openai import OpenAI
+
+    resp = OpenAI().embeddings.create(model=model, input=list(texts))
+    return [row.embedding for row in resp.data]
 
 
 _JSON_FENCE = re.compile(r"```(?:json)?\s*(\{.*\}|\[.*\])\s*```", re.DOTALL)

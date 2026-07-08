@@ -47,6 +47,7 @@ def hydrate_node(state: AgentState, res: Resources) -> dict[str, Any]:
         res.value_index,
         res.fk_graph,
         complete_fn=res.complete_fn,
+        embed_fn=res.embed_fn,
         candidate_k=res.candidate_k,
         budget_tokens=res.budget_tokens,
     )
