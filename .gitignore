@@ -12,8 +12,9 @@ venv/
 .env.*
 !.env.example
 
-# Data — the Chinook DB is downloaded via setup (see README), not committed
+# Data — ignore local DBs, but commit the Chinook sample so Vercel can bundle it
 data/*.db
+!data/Chinook.db
 
 # Node / frontend
 node_modules/
