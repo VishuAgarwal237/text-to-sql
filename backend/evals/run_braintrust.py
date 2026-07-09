@@ -85,6 +85,7 @@ def _normalize_case(case: dict[str, Any]) -> dict[str, Any]:
             ("sql", "gold_sql"),
             ("expected_sql", "gold_sql"),
             ("expected_rows", "expected_rows"),
+            ("expected_result", "expected_rows"),
             ("rows", "expected_rows"),
             ("must_use_tables", "must_use_tables"),
             ("chart_type", "chart_type"),

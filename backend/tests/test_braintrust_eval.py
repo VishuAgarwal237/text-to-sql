@@ -26,6 +26,31 @@ def test_load_cases_accepts_evaluation_data_json(tmp_path):
     }]
 
 
+def test_load_cases_accepts_attached_evaluation_data_shape(tmp_path):
+    path = tmp_path / "evaluation_data.json"
+    path.write_text(
+        """
+        [
+          {
+            "question": "Albums by AC/DC",
+            "sql": "SELECT Title FROM Album",
+            "expected_result": [{"Title": "For Those About To Rock"}]
+          }
+        ]
+        """
+    )
+
+    cases = run_braintrust.load_cases(path)
+
+    assert cases == [{
+        "input": "Albums by AC/DC",
+        "expected": {
+            "gold_sql": "SELECT Title FROM Album",
+            "expected_rows": [{"Title": "For Those About To Rock"}],
+        },
+    }]
+
+
 def test_eval_scorers_score_behavior_not_exact_sql():
     output = {
         "sql": "SELECT Customer.Country, COUNT(*) FROM Customer WHERE Country = 'Germany'",
