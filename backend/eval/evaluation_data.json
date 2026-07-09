@@ -1,0 +1,408 @@
+[
+  {
+    "question": "What are the top 5 best-selling genres by total sales?",
+    "sql": "SELECT g.Name, SUM(il.UnitPrice * il.Quantity) as TotalSales FROM Genre g JOIN Track t ON g.GenreId = t.GenreId JOIN InvoiceLine il ON t.TrackId = il.TrackId GROUP BY g.Name ORDER BY TotalSales DESC LIMIT 5",
+    "expected_result": [
+      {
+        "Name": "Rock",
+        "TotalSales": 826.65
+      },
+      {
+        "Name": "Latin",
+        "TotalSales": 382.14
+      },
+      {
+        "Name": "Metal",
+        "TotalSales": 261.36
+      },
+      {
+        "Name": "Alternative & Punk",
+        "TotalSales": 241.56
+      },
+      {
+        "Name": "TV Shows",
+        "TotalSales": 93.53
+      }
+    ]
+  },
+  {
+    "question": "How many customers does each country have?",
+    "sql": "SELECT Country, COUNT(*) as CustomerCount FROM Customer GROUP BY Country ORDER BY CustomerCount DESC",
+    "expected_result": [
+      {
+        "Country": "USA",
+        "CustomerCount": 13
+      },
+      {
+        "Country": "Canada",
+        "CustomerCount": 8
+      },
+      {
+        "Country": "France",
+        "CustomerCount": 5
+      },
+      {
+        "Country": "Brazil",
+        "CustomerCount": 5
+      },
+      {
+        "Country": "Germany",
+        "CustomerCount": 4
+      },
+      {
+        "Country": "United Kingdom",
+        "CustomerCount": 3
+      },
+      {
+        "Country": "Portugal",
+        "CustomerCount": 2
+      },
+      {
+        "Country": "India",
+        "CustomerCount": 2
+      },
+      {
+        "Country": "Czech Republic",
+        "CustomerCount": 2
+      },
+      {
+        "Country": "Sweden",
+        "CustomerCount": 1
+      },
+      {
+        "Country": "Spain",
+        "CustomerCount": 1
+      },
+      {
+        "Country": "Poland",
+        "CustomerCount": 1
+      },
+      {
+        "Country": "Norway",
+        "CustomerCount": 1
+      },
+      {
+        "Country": "Netherlands",
+        "CustomerCount": 1
+      },
+      {
+        "Country": "Italy",
+        "CustomerCount": 1
+      },
+      {
+        "Country": "Ireland",
+        "CustomerCount": 1
+      },
+      {
+        "Country": "Hungary",
+        "CustomerCount": 1
+      },
+      {
+        "Country": "Finland",
+        "CustomerCount": 1
+      },
+      {
+        "Country": "Denmark",
+        "CustomerCount": 1
+      },
+      {
+        "Country": "Chile",
+        "CustomerCount": 1
+      },
+      {
+        "Country": "Belgium",
+        "CustomerCount": 1
+      },
+      {
+        "Country": "Austria",
+        "CustomerCount": 1
+      },
+      {
+        "Country": "Australia",
+        "CustomerCount": 1
+      },
+      {
+        "Country": "Argentina",
+        "CustomerCount": 1
+      }
+    ]
+  },
+  {
+    "question": "Which employee has the most customers assigned to them?",
+    "sql": "SELECT e.FirstName || ' ' || e.LastName as EmployeeName, COUNT(c.CustomerId) as CustomerCount FROM Employee e JOIN Customer c ON e.EmployeeId = c.SupportRepId GROUP BY e.EmployeeId, e.FirstName, e.LastName ORDER BY CustomerCount DESC LIMIT 1",
+    "expected_result": [
+      {
+        "EmployeeName": "Jane Peacock",
+        "CustomerCount": 21
+      }
+    ]
+  },
+  {
+    "question": "What is the average invoice total for each country?",
+    "sql": "SELECT BillingCountry, AVG(Total) as AverageInvoiceTotal FROM Invoice GROUP BY BillingCountry ORDER BY AverageInvoiceTotal DESC",
+    "expected_result": [
+      {
+        "BillingCountry": "Chile",
+        "AverageInvoiceTotal": 6.659999999999999
+      },
+      {
+        "BillingCountry": "Ireland",
+        "AverageInvoiceTotal": 6.517142857142857
+      },
+      {
+        "BillingCountry": "Hungary",
+        "AverageInvoiceTotal": 6.517142857142857
+      },
+      {
+        "BillingCountry": "Czech Republic",
+        "AverageInvoiceTotal": 6.445714285714286
+      },
+      {
+        "BillingCountry": "Austria",
+        "AverageInvoiceTotal": 6.088571428571428
+      },
+      {
+        "BillingCountry": "Finland",
+        "AverageInvoiceTotal": 5.945714285714286
+      },
+      {
+        "BillingCountry": "Netherlands",
+        "AverageInvoiceTotal": 5.8028571428571425
+      },
+      {
+        "BillingCountry": "India",
+        "AverageInvoiceTotal": 5.78923076923077
+      },
+      {
+        "BillingCountry": "USA",
+        "AverageInvoiceTotal": 5.747912087912088
+      },
+      {
+        "BillingCountry": "Norway",
+        "AverageInvoiceTotal": 5.659999999999999
+      },
+      {
+        "BillingCountry": "Germany",
+        "AverageInvoiceTotal": 5.588571428571428
+      },
+      {
+        "BillingCountry": "France",
+        "AverageInvoiceTotal": 5.574285714285714
+      },
+      {
+        "BillingCountry": "Sweden",
+        "AverageInvoiceTotal": 5.517142857142857
+      },
+      {
+        "BillingCountry": "Portugal",
+        "AverageInvoiceTotal": 5.517142857142857
+      },
+      {
+        "BillingCountry": "Brazil",
+        "AverageInvoiceTotal": 5.4314285714285715
+      },
+      {
+        "BillingCountry": "Canada",
+        "AverageInvoiceTotal": 5.4278571428571425
+      },
+      {
+        "BillingCountry": "United Kingdom",
+        "AverageInvoiceTotal": 5.3742857142857146
+      },
+      {
+        "BillingCountry": "Spain",
+        "AverageInvoiceTotal": 5.374285714285714
+      },
+      {
+        "BillingCountry": "Poland",
+        "AverageInvoiceTotal": 5.374285714285714
+      },
+      {
+        "BillingCountry": "Italy",
+        "AverageInvoiceTotal": 5.374285714285714
+      },
+      {
+        "BillingCountry": "Denmark",
+        "AverageInvoiceTotal": 5.374285714285714
+      },
+      {
+        "BillingCountry": "Belgium",
+        "AverageInvoiceTotal": 5.374285714285714
+      },
+      {
+        "BillingCountry": "Australia",
+        "AverageInvoiceTotal": 5.374285714285714
+      },
+      {
+        "BillingCountry": "Argentina",
+        "AverageInvoiceTotal": 5.374285714285714
+      }
+    ]
+  },
+  {
+    "question": "List all albums by the artist 'AC/DC'",
+    "sql": "SELECT al.Title FROM Album al JOIN Artist ar ON al.ArtistId = ar.ArtistId WHERE ar.Name = 'AC/DC'",
+    "expected_result": [
+      {
+        "Title": "For Those About To Rock We Salute You"
+      },
+      {
+        "Title": "Let There Be Rock"
+      }
+    ]
+  },
+  {
+    "question": "What are the names and email addresses of customers from Brazil?",
+    "sql": "SELECT FirstName, LastName, Email FROM Customer WHERE Country = 'Brazil'",
+    "expected_result": [
+      {
+        "FirstName": "Lu\u00eds",
+        "LastName": "Gon\u00e7alves",
+        "Email": "luisg@embraer.com.br"
+      },
+      {
+        "FirstName": "Eduardo",
+        "LastName": "Martins",
+        "Email": "eduardo@woodstock.com.br"
+      },
+      {
+        "FirstName": "Alexandre",
+        "LastName": "Rocha",
+        "Email": "alero@uol.com.br"
+      },
+      {
+        "FirstName": "Roberto",
+        "LastName": "Almeida",
+        "Email": "roberto.almeida@riotur.gov.br"
+      },
+      {
+        "FirstName": "Fernanda",
+        "LastName": "Ramos",
+        "Email": "fernadaramos4@uol.com.br"
+      }
+    ]
+  },
+  {
+    "question": "How many tracks are there in each playlist?",
+    "sql": "SELECT p.Name, COUNT(pt.TrackId) as TrackCount FROM Playlist p LEFT JOIN PlaylistTrack pt ON p.PlaylistId = pt.PlaylistId GROUP BY p.PlaylistId, p.Name ORDER BY TrackCount DESC",
+    "expected_result": [
+      {
+        "Name": "Music",
+        "TrackCount": 3290
+      },
+      {
+        "Name": "Music",
+        "TrackCount": 3290
+      },
+      {
+        "Name": "90\u2019s Music",
+        "TrackCount": 1477
+      },
+      {
+        "Name": "TV Shows",
+        "TrackCount": 213
+      },
+      {
+        "Name": "TV Shows",
+        "TrackCount": 213
+      },
+      {
+        "Name": "Classical",
+        "TrackCount": 75
+      },
+      {
+        "Name": "Brazilian Music",
+        "TrackCount": 39
+      },
+      {
+        "Name": "Heavy Metal Classic",
+        "TrackCount": 26
+      },
+      {
+        "Name": "Classical 101 - Deep Cuts",
+        "TrackCount": 25
+      },
+      {
+        "Name": "Classical 101 - Next Steps",
+        "TrackCount": 25
+      },
+      {
+        "Name": "Classical 101 - The Basics",
+        "TrackCount": 25
+      },
+      {
+        "Name": "Grunge",
+        "TrackCount": 15
+      },
+      {
+        "Name": "Music Videos",
+        "TrackCount": 1
+      },
+      {
+        "Name": "On-The-Go 1",
+        "TrackCount": 1
+      },
+      {
+        "Name": "Movies",
+        "TrackCount": 0
+      },
+      {
+        "Name": "Audiobooks",
+        "TrackCount": 0
+      },
+      {
+        "Name": "Audiobooks",
+        "TrackCount": 0
+      },
+      {
+        "Name": "Movies",
+        "TrackCount": 0
+      }
+    ]
+  },
+  {
+    "question": "What is the total revenue generated in the year 2021?",
+    "sql": "SELECT SUM(Total) as TotalRevenue FROM Invoice WHERE strftime('%Y', InvoiceDate) = '2021'",
+    "expected_result": [
+      {
+        "TotalRevenue": 449.46
+      }
+    ]
+  },
+  {
+    "question": "Which 5 tracks have the longest duration?",
+    "sql": "SELECT Name, Milliseconds FROM Track ORDER BY Milliseconds DESC LIMIT 5",
+    "expected_result": [
+      {
+        "Name": "Occupation / Precipice",
+        "Milliseconds": 5286953
+      },
+      {
+        "Name": "Through a Looking Glass",
+        "Milliseconds": 5088838
+      },
+      {
+        "Name": "Greetings from Earth, Pt. 1",
+        "Milliseconds": 2960293
+      },
+      {
+        "Name": "The Man With Nine Lives",
+        "Milliseconds": 2956998
+      },
+      {
+        "Name": "Battlestar Galactica, Pt. 2",
+        "Milliseconds": 2956081
+      }
+    ]
+  },
+  {
+    "question": "What is the most popular media type based on number of tracks?",
+    "sql": "SELECT mt.Name, COUNT(t.TrackId) as TrackCount FROM MediaType mt JOIN Track t ON mt.MediaTypeId = t.MediaTypeId GROUP BY mt.MediaTypeId, mt.Name ORDER BY TrackCount DESC LIMIT 1",
+    "expected_result": [
+      {
+        "Name": "MPEG audio file",
+        "TrackCount": 3034
+      }
+    ]
+  }
+]
