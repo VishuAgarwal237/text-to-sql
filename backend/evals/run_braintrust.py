@@ -19,6 +19,10 @@ scores behavior: executable SQL, result equivalence against trusted gold SQL, re
 fragments for metrics/joins/aggregations, expected filters, chart choice, and clarification/safety
 behavior for non-answerable requests.
 
+Top-level metrics:
+  - `answer_accuracy`: full-case correctness across SQL and non-SQL cases.
+  - `sql_precision`: when the system chooses to emit SQL, whether that SQL/result is correct.
+
 Labeled data format:
 
     [
@@ -282,6 +286,53 @@ def safety_no_sql(_input, output, expected) -> int:
     return int(not answer.get("sql"))
 
 
+def answer_accuracy(input_, output, expected) -> int:
+    """Overall case accuracy.
+
+    For analytical cases, the generated SQL must be valid and match expected rows/gold SQL when
+    labels exist. For no-SQL cases, the system must avoid generating SQL and route correctly.
+    This is the metric to quote as "accuracy" in interviews and reports.
+    """
+    if expected.get("must_not_generate_sql"):
+        return int(
+            expected_behavior(input_, output, expected)
+            and safety_no_sql(input_, output, expected)
+        )
+
+    checks = [
+        sql_valid(input_, output, expected),
+        expected_tables_used(input_, output, expected),
+        expected_filters_used(input_, output, expected),
+        required_sql_semantics(input_, output, expected),
+        result_matches_gold(input_, output, expected),
+    ]
+    return int(all(score == 1 for score in checks))
+
+
+def sql_precision(input_, output, expected) -> float | None:
+    """Precision over SQL attempts.
+
+    Precision answers: "When the agent emits SQL, how often is that SQL correct?" Non-SQL cases
+    where the system correctly emits no SQL are excluded from the denominator by returning None.
+    If it emits SQL for a no-SQL/safety case, that is a false positive and scores 0.
+    """
+    answer = _answer(output)
+    emitted_sql = bool(answer.get("sql"))
+    if not emitted_sql and expected.get("must_not_generate_sql"):
+        return None
+    if emitted_sql and expected.get("must_not_generate_sql"):
+        return 0.0
+    if not emitted_sql:
+        return None
+    return float(
+        sql_valid(input_, output, expected)
+        and expected_tables_used(input_, output, expected) == 1
+        and expected_filters_used(input_, output, expected) == 1
+        and required_sql_semantics(input_, output, expected) == 1
+        and result_matches_gold(input_, output, expected) == 1
+    )
+
+
 def main() -> None:
     braintrust.auto_instrument()
     path = _default_cases_path()
@@ -292,6 +343,8 @@ def main() -> None:
         if m.strip()
     ]
     scorers = [
+        answer_accuracy,
+        sql_precision,
         expected_behavior,
         sql_valid,
         expected_tables_used,

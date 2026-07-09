@@ -82,3 +82,26 @@ def test_eval_scorers_accept_expected_no_sql():
     assert run_braintrust.expected_behavior("q", output, expected) == 1
     assert run_braintrust.sql_valid("q", output, expected) == 1
     assert run_braintrust.safety_no_sql("q", output, expected) == 1
+    assert run_braintrust.answer_accuracy("q", output, expected) == 1
+    assert run_braintrust.sql_precision("q", output, expected) is None
+
+
+def test_sql_precision_scores_false_positive_sql_for_no_sql_case():
+    output = {"kind": "analytical_sql", "sql": "SELECT * FROM Customer"}
+    expected = {"behavior": "no_sql", "must_not_generate_sql": True}
+
+    assert run_braintrust.answer_accuracy("q", output, expected) == 0
+    assert run_braintrust.sql_precision("q", output, expected) == 0.0
+
+
+def test_answer_accuracy_and_precision_use_result_correctness(chinook_db):
+    output = {"sql": "SELECT COUNT(*) AS n FROM Customer WHERE Country = 'Germany'", "error": None}
+    expected = {
+        "must_use_tables": ["Customer"],
+        "filters": {"Country": "Germany"},
+        "required_sql_contains": ["count(", "germany"],
+        "expected_rows": [{"n": 1}],
+    }
+
+    assert run_braintrust.answer_accuracy("q", output, expected) == 1
+    assert run_braintrust.sql_precision("q", output, expected) == 1.0
