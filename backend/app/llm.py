@@ -89,6 +89,7 @@ def complete_json(
 
     t0 = time.perf_counter()
     try:
+        print(system)
         resp = litellm.completion(
             model=model,
             messages=[{"role": "system", "content": system}, {"role": "user", "content": user}],
