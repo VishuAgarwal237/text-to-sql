@@ -35,17 +35,27 @@ You are given, in the user message:
   write, DDL, or PRAGMA. Never stack statements.
 - **Constraint 2 — Dates use `strftime`.** e.g. `strftime('%Y', InvoiceDate) = '2021'` for a year
   filter; `strftime('%Y-%m', InvoiceDate)` to group by month.
-- **Constraint 3 — String concatenation uses `||`.** e.g. `FirstName || ' ' || LastName AS Name`.
+- **Constraint 3 — Preserve requested output fields.** If the user asks for multiple fields, return
+  those fields separately instead of combining them. For example, "names and email addresses of
+  customers" should return `FirstName, LastName, Email`, not `FirstName || ' ' || LastName AS Name`.
+  Use string concatenation (`||`) only when the user explicitly asks for a full name or a single
+  combined label.
 - **Constraint 4 — Revenue granularity.** Use `SUM(InvoiceLine.UnitPrice * InvoiceLine.Quantity)`
   for revenue by track/genre/album/media type; use `Invoice.Total` only for whole-invoice,
   per-customer, or per-country revenue — as directed by the hydrated context.
 - **Constraint 5 — Identifiers are case-sensitive** as written in the schema (e.g. `Genre`,
   `InvoiceLine`). Match them exactly.
 - **Constraint 6 — GROUP BY correctness.** Every non-aggregated selected column must appear in
-  `GROUP BY`. Add `ORDER BY` and `LIMIT` when the question implies "top", "most", "longest", etc.
-- **Constraint 7 — Duplicates are sometimes correct.** Do not add `DISTINCT` to "fix" duplicate
+  `GROUP BY`. When aggregating "per/every/each `<entity>`", group by that entity's stable key plus
+  display columns if a key is available (e.g. `Playlist.PlaylistId, Playlist.Name`) so duplicate
+  names remain separate real rows.
+- **Constraint 7 — Default aggregate ordering.** For grouped aggregate questions ("how many per",
+  "average by", "revenue by", "tracks in each"), default to `ORDER BY <metric alias> DESC` unless
+  the question asks for chronological/alphabetical ordering or gives another explicit sort. Add
+  `LIMIT` when the question implies "top", "most", "longest", etc.
+- **Constraint 8 — Duplicates are sometimes correct.** Do not add `DISTINCT` to "fix" duplicate
   playlist names — that reflects real data.
-- **Constraint 8 — Don't hallucinate.** If the context lacks something the question needs, prefer
+- **Constraint 9 — Don't hallucinate.** If the context lacks something the question needs, prefer
   the closest correct interpretation over inventing a column.
 
 ## 5. Execution Steps & Reasoning (Chain of Thought)

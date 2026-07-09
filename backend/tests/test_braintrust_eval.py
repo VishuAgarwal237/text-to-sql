@@ -100,6 +100,24 @@ def test_eval_result_match_can_ignore_order(chinook_db):
     assert run_braintrust.result_matches_gold("q", output, expected) == 1
 
 
+def test_eval_result_match_allows_reordered_metric_ties(chinook_db):
+    output = {"sql": "SELECT Country, COUNT(*) AS n FROM Customer GROUP BY Country ORDER BY n DESC, Country ASC"}
+    expected = {
+        "gold_sql": "SELECT Country, COUNT(*) AS n FROM Customer GROUP BY Country ORDER BY n DESC, Country DESC",
+    }
+
+    assert run_braintrust.result_matches_gold("q", output, expected) == 1
+
+
+def test_eval_result_match_rejects_wrong_metric_order(chinook_db):
+    output = {"sql": "SELECT InvoiceId, Total FROM Invoice ORDER BY Total ASC"}
+    expected = {
+        "gold_sql": "SELECT InvoiceId, Total FROM Invoice ORDER BY Total DESC",
+    }
+
+    assert run_braintrust.result_matches_gold("q", output, expected) == 0
+
+
 def test_eval_scorers_accept_expected_no_sql():
     output = {"kind": "unsupported", "message": "Cannot do that."}
     expected = {"behavior": "no_sql", "must_not_generate_sql": True}

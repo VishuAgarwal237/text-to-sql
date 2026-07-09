@@ -251,6 +251,43 @@ def _expected_rows_as_value_tuples(rows: list[dict[str, Any]]) -> list[tuple[Any
     return [tuple(_norm_value(row.get(col)) for col in columns) for row in rows]
 
 
+def _metric_index(rows: list[tuple[Any, ...]]) -> int | None:
+    if not rows:
+        return None
+    width = len(rows[0])
+    for idx in range(width):
+        values = [row[idx] for row in rows if len(row) > idx and row[idx] is not None]
+        if values and all(isinstance(value, (int, float)) for value in values):
+            return idx
+    return None
+
+
+def _same_multiset(left: list[tuple[Any, ...]], right: list[tuple[Any, ...]]) -> bool:
+    return sorted(left) == sorted(right)
+
+
+def _same_order_except_metric_ties(
+    generated_rows: list[tuple[Any, ...]],
+    gold_rows: list[tuple[Any, ...]],
+) -> bool:
+    """Accept arbitrary ordering inside equal-metric tie groups.
+
+    SQL engines do not guarantee row order inside ties unless the gold query includes a complete
+    secondary sort. This keeps ordered accuracy strict across different metric values while not
+    failing equivalent answers because tied rows arrived in a different arbitrary order.
+    """
+    if generated_rows == gold_rows:
+        return True
+    if not _same_multiset(generated_rows, gold_rows):
+        return False
+    metric_idx = _metric_index(gold_rows)
+    if metric_idx is None:
+        return False
+    generated_metric_order = [row[metric_idx] for row in generated_rows]
+    gold_metric_order = [row[metric_idx] for row in gold_rows]
+    return generated_metric_order == gold_metric_order
+
+
 def result_matches_gold(_input, output, expected) -> int:
     """Compare generated results to labeled expected rows or trusted gold SQL results.
 
@@ -276,7 +313,7 @@ def result_matches_gold(_input, output, expected) -> int:
         return 0
     generated_rows = _rows_as_value_tuples(generated)
     if expected.get("ordered", True):
-        return int(generated_rows == gold_rows)
+        return int(_same_order_except_metric_ties(generated_rows, gold_rows))
     return int(sorted(generated_rows) == sorted(gold_rows))
 
 
