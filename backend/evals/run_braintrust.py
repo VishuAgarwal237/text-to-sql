@@ -4,6 +4,12 @@ Run from `backend/`:
 
     BRAINTRUST_API_KEY=... OPENAI_API_KEY=... python -m evals.run_braintrust
 
+Run against labeled data and/or multiple models:
+
+    EVAL_DATA_PATH=evaluation_data.json \
+    LLM_CHAT_MODELS=gpt-4o-mini,gpt-4.1-mini \
+    python -m evals.run_braintrust
+
 Prereqs:
   - `python -m app.metadata.generate` has created `data/schema_metadata.json`
   - `CHINOOK_DB_PATH` points at a readable Chinook SQLite DB, unless using the default path
@@ -12,12 +18,28 @@ Scoring intentionally avoids exact SQL string matching. Equivalent SQL can be va
 scores behavior: executable SQL, result equivalence against trusted gold SQL, required semantic
 fragments for metrics/joins/aggregations, expected filters, chart choice, and clarification/safety
 behavior for non-answerable requests.
+
+Labeled data format:
+
+    [
+      {
+        "input": "Top 5 genres by revenue",
+        "expected": {
+          "gold_sql": "SELECT ...",
+          "expected_rows": [{"Name": "Rock", "Revenue": 826.65}]
+        }
+      }
+    ]
+
+If `expected_rows` is omitted but `gold_sql` is present, the scorer executes `gold_sql` and uses
+that as the trusted result. If both are present, `expected_rows` wins.
 """
 
 from __future__ import annotations
 
 import json
 import math
+import os
 import re
 from pathlib import Path
 from typing import Any
@@ -27,36 +49,99 @@ from braintrust import Eval, current_span
 
 from app import db
 from app.observability import DEFAULT_PROJECT
-from app.resources import build_resources
+from app import llm
 from app.nodes import run_pipeline
+from app.resources import build_resources
 
-CASES_PATH = Path(__file__).with_name("text_to_sql_cases.jsonl")
+DEFAULT_CASES_PATH = Path(__file__).with_name("text_to_sql_cases.jsonl")
+DEFAULT_EVALUATION_DATA_PATH = Path(__file__).with_name("evaluation_data.json")
 
 
-def load_cases(path: Path = CASES_PATH) -> list[dict[str, Any]]:
-    return [json.loads(line) for line in path.read_text().splitlines() if line.strip()]
+def _default_cases_path() -> Path:
+    explicit = os.environ.get("EVAL_DATA_PATH")
+    if explicit:
+        return Path(explicit)
+    if DEFAULT_EVALUATION_DATA_PATH.exists():
+        return DEFAULT_EVALUATION_DATA_PATH
+    return DEFAULT_CASES_PATH
+
+
+def _normalize_case(case: dict[str, Any]) -> dict[str, Any]:
+    """Accept common labeled-data shapes and normalize to Braintrust EvalCase dicts."""
+    if "input" not in case:
+        for key in ("question", "prompt", "natural_language_query"):
+            if key in case:
+                case["input"] = case[key]
+                break
+    expected = case.get("expected", {})
+    if not expected:
+        expected = {}
+        for src, dst in (
+            ("gold_sql", "gold_sql"),
+            ("sql", "gold_sql"),
+            ("expected_sql", "gold_sql"),
+            ("expected_rows", "expected_rows"),
+            ("rows", "expected_rows"),
+            ("must_use_tables", "must_use_tables"),
+            ("chart_type", "chart_type"),
+        ):
+            if src in case:
+                expected[dst] = case[src]
+    case["expected"] = expected
+    if "input" not in case:
+        raise ValueError(f"Eval case is missing input/question: {case}")
+    return {"input": case["input"], "expected": case["expected"]}
+
+
+def load_cases(path: Path | None = None) -> list[dict[str, Any]]:
+    """Load JSON array, `{cases: [...]}`, `{data: [...]}`, or JSONL eval cases."""
+    path = path or _default_cases_path()
+    text = path.read_text().strip()
+    if not text:
+        return []
+    if text[0] in "[{":
+        try:
+            parsed = json.loads(text)
+        except json.JSONDecodeError:
+            pass
+        else:
+            if isinstance(parsed, dict):
+                parsed = parsed.get("cases") or parsed.get("data") or parsed.get("examples") or [parsed]
+            return [_normalize_case(dict(case)) for case in parsed]
+    return [_normalize_case(json.loads(line)) for line in text.splitlines() if line.strip()]
 
 
 def _answer(output: dict[str, Any]) -> dict[str, Any]:
     return output.get("answer", output)
 
 
-def task(question: str) -> dict[str, Any]:
-    state = run_pipeline(question, build_resources())
-    answer = state["answer"]
-    current_span().log(
-        input=question,
-        output=answer,
-        metadata={
-            "trace": state.get("trace", []),
-            "sql": answer.get("sql"),
-            "row_count": answer.get("row_count"),
-            "truncated": answer.get("truncated"),
-            "chart_type": answer.get("chart_type"),
-            "error": answer.get("error"),
-        },
-    )
-    return answer
+def make_task(model: str | None):
+    """Build a model-specific task so one eval run can compare multiple LLMs."""
+
+    def complete(system: str, user: str) -> str:
+        return llm.complete(system, user, model=model)
+
+    res = build_resources(complete_fn=complete)
+
+    def task(question: str) -> dict[str, Any]:
+        state = run_pipeline(question, res)
+        answer = state["answer"]
+        current_span().log(
+            input=question,
+            output=answer,
+            metadata={
+                "model": model or llm.CHAT_MODEL,
+                "trace": state.get("trace", []),
+                "sql": answer.get("sql"),
+                "row_count": answer.get("row_count"),
+                "truncated": answer.get("truncated"),
+                "chart_type": answer.get("chart_type"),
+                "error": answer.get("error"),
+            },
+        )
+        return answer
+
+    return task
 
 
 def sql_valid(_input, output, expected) -> int:
@@ -154,26 +239,37 @@ def _rows_as_value_tuples(result: dict[str, Any]) -> list[tuple[Any, ...]]:
     return [tuple(_norm_value(row.get(col)) for col in columns) for row in rows]
 
 
+def _expected_rows_as_value_tuples(rows: list[dict[str, Any]]) -> list[tuple[Any, ...]]:
+    if not rows:
+        return []
+    columns = list(rows[0])
+    return [tuple(_norm_value(row.get(col)) for col in columns) for row in rows]
+
+
 def result_matches_gold(_input, output, expected) -> int:
-    """Execute trusted gold SQL and compare result tuples to generated output tuples.
+    """Compare generated results to labeled expected rows or trusted gold SQL results.
 
     Column aliases may differ across equivalent SQL, so comparison is value-based using column
     order. Ordering still matters when the gold query orders rows; unordered-result cases can set
     `"ordered": false`.
     """
     gold_sql = expected.get("gold_sql")
-    if not gold_sql:
+    expected_rows = expected.get("expected_rows")
+    if expected_rows is None and not gold_sql:
         return 1
     answer = _answer(output)
     if not answer.get("sql") or answer.get("error"):
         return 0
     try:
         generated = db.run_query(answer["sql"], max_rows=expected.get("max_rows", 1000))
-        gold = db.run_query(gold_sql, max_rows=expected.get("max_rows", 1000))
+        if expected_rows is not None:
+            gold_rows = _expected_rows_as_value_tuples(expected_rows)
+        else:
+            gold = db.run_query(gold_sql, max_rows=expected.get("max_rows", 1000))
+            gold_rows = _rows_as_value_tuples(gold)
     except Exception:
         return 0
     generated_rows = _rows_as_value_tuples(generated)
-    gold_rows = _rows_as_value_tuples(gold)
     if expected.get("ordered", True):
         return int(generated_rows == gold_rows)
     return int(sorted(generated_rows) == sorted(gold_rows))
@@ -188,23 +284,33 @@ def safety_no_sql(_input, output, expected) -> int:
 
 def main() -> None:
     braintrust.auto_instrument()
-    Eval(
-        DEFAULT_PROJECT,
-        experiment_name="text-to-sql-agent-flow",
-        data=load_cases(),
-        task=task,
-        scores=[
-            expected_behavior,
-            sql_valid,
-            expected_tables_used,
-            expected_filters_used,
-            required_sql_semantics,
-            result_matches_gold,
-            chart_type_match,
-            safety_no_sql,
-        ],
-        metadata={"suite": "text_to_sql_cases"},
-    )
+    path = _default_cases_path()
+    cases = load_cases(path)
+    models = [
+        m.strip()
+        for m in os.environ.get("LLM_CHAT_MODELS", os.environ.get("LLM_CHAT_MODEL", llm.CHAT_MODEL)).split(",")
+        if m.strip()
+    ]
+    scorers = [
+        expected_behavior,
+        sql_valid,
+        expected_tables_used,
+        expected_filters_used,
+        required_sql_semantics,
+        result_matches_gold,
+        chart_type_match,
+        safety_no_sql,
+    ]
+    for model in models:
+        safe_model = re.sub(r"[^A-Za-z0-9_.-]+", "-", model)
+        Eval(
+            DEFAULT_PROJECT,
+            experiment_name=f"text-to-sql-agent-flow-{safe_model}",
+            data=cases,
+            task=make_task(model),
+            scores=scorers,
+            metadata={"suite": path.name, "model": model, "case_count": len(cases)},
+        )
 
 
 if __name__ == "__main__":
